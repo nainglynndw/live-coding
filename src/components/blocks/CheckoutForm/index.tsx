@@ -34,6 +34,7 @@ import {
 } from "./index.styled"
 import Store from "@app/store"
 import axios from "axios"
+import { ControllerVolume } from "styled-icons/entypo"
 
 type TypeCheckoutFormDefaultValues = {
     email: string | null
@@ -95,10 +96,23 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
                     "string.cardNumber": "Must be a valid card",
                     "any.required": "Required",
                 }),
-            card_expire: Joi.string().required().messages({
-                "string.empty": "Required",
-                "any.required": "Required",
-            }),
+            card_expire: Joi.string()
+                .custom((value, helpers) => {
+                    if (value) {
+                        const gg = value.split(" / ")
+                        const expire = new Date()
+                        const date = new Date()
+                        expire.setFullYear(gg[1], gg[0], 1)
+                        if (expire < date) return helpers.error("string.expire")
+                        return value
+                    }
+                })
+                .required()
+                .messages({
+                    "string.expire": "Invalid Date",
+                    "string.empty": "Required",
+                    "any.required": "Required",
+                }),
             cvv: Joi.string().length(3).required().messages({
                 "string.empty": "Required",
                 "string.length": "Maximum 3 digits",
@@ -140,7 +154,6 @@ const CheckoutForm: FC<CheckoutFormProps> = ({
     const formatter = {
         cardNumber: (e: ChangeEvent<HTMLInputElement>) => {
             const value = formatCardNumber(e.target.value)
-
             updateModel("card_number", value)
         },
         cardExpire: (e: ChangeEvent<HTMLInputElement>) => {
